@@ -5,7 +5,7 @@ name: Deploy web clock
 on:
   release:
     types: [released]   # a new full release, or a pre-release promoted to a full release
-  workflow_dispatch:     # lets you re-deploy by hand from the Actions tab
+  workflow_dispatch:     # "Run workflow" in the Actions tab re-deploys the latest release
 
 permissions:
   contents: read
@@ -17,23 +17,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Pick the release to publish
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "release" ]; then
+            tag="$EVENT_TAG"
+          else
+            tag="$(gh release view --json tagName --jq .tagName)"
+          fi
+          echo "Publishing release $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Check out the release
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
 
       - name: Set up Pages
         uses: actions/configure-pages@v5
 
       - name: Upload the web clock
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
