@@ -1,12 +1,14 @@
 # Cozy Clock
 
-A cozy, dark-by-default clock with a drifting glow, a real-phase moon, day and night skies, custom photo backgrounds, and a Zen breathing mode.
+A cozy, dark-by-default clock with a drifting glow, a real-phase moon, day and night skies that follow your real sunrise and sunset, custom photo backgrounds, and a Zen breathing mode.
 
 ## Use it in your browser
 
 **👉 [Open Hearth Clock](https://mr-macbook-usa.github.io/Cozy-Clock/)**
 
 Works on any phone, tablet, or computer. No install or sign-up. Your settings and any photo you add stay in your own browser.
+
+Allow location when asked and the sun, moon, and day/night sky follow your real sunrise and sunset. Your location is only used on your device to work out those times; without it, the sky follows 7 AM to 6 PM.
 
 Tip: on iPhone, tap Share → **Add to Home Screen** to use it like an app.
 

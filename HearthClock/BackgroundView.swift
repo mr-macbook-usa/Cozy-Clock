@@ -1,15 +1,9 @@
 import SwiftUI
 
-/// The two bundled sky photos. Day runs from 7 AM to 6 PM, matching when the sun is up.
+/// The two bundled sky photos. The day sky shows from sunrise to sunset (see `SkyClock`).
 enum SkyImages {
     static let day = load("day-sky")
     static let night = load("night-sky")
-
-    static func isDay(_ date: Date) -> Bool {
-        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
-        let mins = (c.hour ?? 0) * 60 + (c.minute ?? 0)
-        return mins >= 7 * 60 && mins < 18 * 60
-    }
 
     private static func load(_ name: String) -> UIImage? {
         guard let path = Bundle.main.path(forResource: name, ofType: "jpg") else { return nil }
@@ -24,6 +18,7 @@ struct BackgroundView: View {
     let photo: UIImage?
     let autoSky: Bool
     let zen: Bool
+    let coordinate: Coordinate?
 
     @State private var drift = false
 
@@ -36,7 +31,7 @@ struct BackgroundView: View {
                 photoLayer(photo, tint: 0.38)
             } else if autoSky {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
-                    skyLayer(day: SkyImages.isDay(context.date))
+                    skyLayer(day: SkyClock.state(at: context.date, coordinate: coordinate).isDay)
                 }
             }
         }
@@ -81,16 +76,17 @@ struct BackgroundView: View {
     }
 }
 
-/// A warm sun that is up from 7 AM to 6 PM and crosses the sky from left to right.
+/// A warm sun that rises at your real sunrise, crosses the sky from left to right, and sets at your real sunset.
 struct SunView: View {
     let zen: Bool
+    let coordinate: Coordinate?
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
-            let parts = Calendar.current.dateComponents([.hour, .minute], from: context.date)
-            let mins = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
-            let visible = mins >= 7 * 60 && mins < 18 * 60
-            let p = min(max(Double(mins - 7 * 60) / 660.0, 0), 1)
+            let sky = SkyClock.state(at: context.date, coordinate: coordinate)
+            let visible = sky.isDay
+            // At night the hidden sun waits where it set, then moves to where it will rise.
+            let p = visible ? sky.progress : (sky.progress < 0.5 ? 1.0 : 0.0)
 
             GeometryReader { geo in
                 Circle()

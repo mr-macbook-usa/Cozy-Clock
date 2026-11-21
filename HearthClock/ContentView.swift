@@ -12,15 +12,17 @@ struct ContentView: View {
 
     @State private var photo: UIImage? = PhotoStore.load()
     @State private var showBackgrounds = false
+    @State private var location = LocationProvider()
+    @Environment(\.scenePhase) private var scenePhase
 
     private var palette: Palette { Palette(rawValue: paletteRaw) ?? .dusk }
     private var accent: Color { zen ? Theme.zen.accent : palette.theme.accent }
 
     var body: some View {
         ZStack {
-            BackgroundView(palette: palette, photo: usePhoto ? photo : nil, autoSky: autoSky, zen: zen)
-            SunView(zen: zen)
-            MoonView(zen: zen)
+            BackgroundView(palette: palette, photo: usePhoto ? photo : nil, autoSky: autoSky, zen: zen, coordinate: location.coordinate)
+            SunView(zen: zen, coordinate: location.coordinate)
+            MoonView(zen: zen, coordinate: location.coordinate)
 
             VStack(spacing: 16) {
                 topBar
@@ -45,10 +47,19 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.5), value: nightDim)
         .sensoryFeedback(.impact(weight: .light), trigger: zen)
         .sheet(isPresented: $showBackgrounds) {
-            BackgroundsSheet(paletteRaw: $paletteRaw, usePhoto: $usePhoto, autoSky: $autoSky, photo: $photo)
+            BackgroundsSheet(
+                paletteRaw: $paletteRaw, usePhoto: $usePhoto, autoSky: $autoSky, photo: $photo,
+                coordinate: location.coordinate, locationDenied: location.denied
+            )
                 .presentationDetents([.medium, .large])
         }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+            location.refresh()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { location.refresh() }
+        }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 
@@ -121,6 +132,8 @@ struct BackgroundsSheet: View {
     @Binding var usePhoto: Bool
     @Binding var autoSky: Bool
     @Binding var photo: UIImage?
+    let coordinate: Coordinate?
+    let locationDenied: Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var pickerItem: PhotosPickerItem?
@@ -136,7 +149,7 @@ struct BackgroundsSheet: View {
                         usePhoto = false
                     } label: {
                         tile(selected: autoSky && !usePhoto, accent: .white) {
-                            if let img = SkyImages.isDay(Date()) ? SkyImages.day : SkyImages.night {
+                            if let img = SkyClock.state(at: .now, coordinate: coordinate).isDay ? SkyImages.day : SkyImages.night {
                                 Color.clear.overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
                             } else {
                                 Color.blue.opacity(0.4)
@@ -193,6 +206,13 @@ struct BackgroundsSheet: View {
                     .padding(.bottom, 8)
                 }
 
+                Text(sunNote)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+
                 Text("Photos stay on this device. A dark tint keeps the time easy to read.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -220,6 +240,25 @@ struct BackgroundsSheet: View {
                 }
                 pickerItem = nil
             }
+        }
+    }
+
+    /// Today's sunrise and sunset, or why the sky is following 7 AM to 6 PM instead.
+    private var sunNote: String {
+        guard let coordinate else {
+            return locationDenied
+                ? "Location is off, so the sun and sky follow 7 AM to 6 PM. Turn on Location for Hearth Clock in Settings to match your real sunrise and sunset."
+                : "The sun and sky follow 7 AM to 6 PM until Hearth Clock can use your location."
+        }
+        switch Solar.events(on: .now, at: coordinate) {
+        case .alwaysUp:
+            return "The sun stays up all day today where you are."
+        case .alwaysDown:
+            return "The sun stays down all day today where you are."
+        case let .normal(rise, set):
+            let r = rise.formatted(date: .omitted, time: .shortened)
+            let s = set.formatted(date: .omitted, time: .shortened)
+            return "Sunrise \(r) · Sunset \(s) today, based on your location."
         }
     }
 
