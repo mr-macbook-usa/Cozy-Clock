@@ -1,0 +1,39 @@
+# Publishes the web clock (docs/) to GitHub Pages every time a release is published,
+# so the "Open Hearth Clock" link in the README always serves the latest release.
+name: Deploy web clock
+
+on:
+  release:
+    types: [released]   # a new full release, or a pre-release promoted to a full release
+  workflow_dispatch:     # lets you re-deploy by hand from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@v4
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the web clock
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
