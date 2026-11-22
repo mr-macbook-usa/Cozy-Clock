@@ -12,6 +12,11 @@ enum MoonPhase {
         return p < 0 ? p + 1 : p
     }
 
+    /// How much of the moon is lit, from 0 (new) to 1 (full).
+    static func illumination(for p: Double) -> Double {
+        (1 - cos(2 * Double.pi * p)) / 2
+    }
+
     static func name(for p: Double) -> String {
         switch p {
         case ..<0.03, 0.97...: "New Moon"
@@ -23,6 +28,36 @@ enum MoonPhase {
         case ..<0.78: "Last Quarter"
         default: "Waning Crescent"
         }
+    }
+}
+
+/// A small glass pill under the date: a tiny moon in tonight's phase, the phase name, and how much of it is lit.
+struct MoonPhaseBadge: View {
+    let date: Date
+
+    var body: some View {
+        let phase = MoonPhase.fraction(for: date)
+        let name = MoonPhase.name(for: phase)
+        let lit = Int((MoonPhase.illumination(for: phase) * 100).rounded())
+
+        HStack(spacing: 7) {
+            ZStack {
+                Circle().fill(Color(hex: 0x8FA0C8).opacity(0.3))
+                Circle().fill(Color(hex: 0xF4F1E6)).mask(MoonLitShape(phase: phase))
+            }
+            .frame(width: 15, height: 15)
+
+            Text("\(name) · \(lit)%")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.7))
+                .lineLimit(1)
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 6)
+        .glassEffect(.regular, in: .capsule)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Moon phase: \(name), \(lit) percent lit")
     }
 }
 

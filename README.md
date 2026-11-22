@@ -1,6 +1,6 @@
 # Cozy Clock
 
-A cozy, dark-by-default clock with a drifting glow, a real-phase moon, day and night skies that follow your real sunrise and sunset, custom photo backgrounds, and a Zen breathing mode.
+A cozy, dark-by-default clock with a drifting glow, a real-phase moon with today's phase shown under the date, day and night skies that follow your real sunrise and sunset, custom photo backgrounds, and a Zen breathing mode.
 
 ## Use it in your browser
 

@@ -17,7 +17,7 @@ To try other places in the Simulator, use Features > Location.
 
 ## What's inside
 
-- `ContentView.swift`: layout, the glass dock, the Zen toggle (top left), and the Backgrounds sheet with photo upload.
+- `ContentView.swift`: layout, the date and moon phase pills, the glass dock, the Zen toggle (top left), and the Backgrounds sheet with photo upload.
 - `ClockCard.swift`: the glass clock slab, seconds bar, and the Zen breathing dot and pulsing border.
 - `PuppyView.swift`: the golden retriever puppy, drawn with SwiftUI Canvas so it stays sharp at any size.
 - `BackgroundView.swift`: drifting colour glow, photo backgrounds, the day and night sky photos, and the sun (up from your real sunrise to sunset). The moon is up from sunset to sunrise, drawn in its real current phase in `MoonView.swift`.

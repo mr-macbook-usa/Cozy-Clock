@@ -66,7 +66,7 @@ struct ContentView: View {
     // MARK: Top bar
 
     private var topBar: some View {
-        HStack {
+        HStack(alignment: .top) {
             Button {
                 zen.toggle()
             } label: {
@@ -80,13 +80,17 @@ struct ContentView: View {
             Spacer()
 
             TimelineView(.everyMinute) { context in
-                Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day())
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day())
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .glassEffect(.regular, in: .capsule)
+
+                    MoonPhaseBadge(date: context.date)
+                }
             }
         }
     }

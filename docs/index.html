@@ -174,8 +174,11 @@ input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; po
 @property --accent { syntax: "<color>"; inherits: true; initial-value: #ffc08a; }
 #app { transition: --a 1.4s ease, --b 1.4s ease, --c 1.4s ease, --accent 1.4s ease; }
 [data-palette="zen"] { --a: #4d6b5b; --b: #0e1411; --c: #7a6a48; --accent: #ecdcb8; }
-.topbar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.topbar { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 6px; }
 .topbar .date { margin-top: 0; min-width: 0; text-align: right; }
+.top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 0; }
+.phase { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 7px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.01em; color: var(--muted); white-space: nowrap; }
+.phase svg { width: 16px; height: 16px; flex: none; }
 .zen-btn { appearance: none; border: 0; display: flex; align-items: center; gap: 8px; padding: 10px 18px 10px 14px; border-radius: 999px; color: var(--text); font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: color 0.6s; }
 .zen-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .zen-btn[aria-pressed="true"] { color: var(--accent); }
@@ -228,7 +231,13 @@ input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; po
     <button type="button" class="glass zen-btn" id="zenbtn" aria-pressed="false">
       <svg viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19c2-4 5-7 9-9"/></svg>Zen
     </button>
-    <div class="glass date" id="date">Saturday, November 21</div>
+    <div class="top-right">
+      <div class="glass date" id="date">Saturday, November 21</div>
+      <div class="glass phase" id="phase" role="img" aria-label="Moon phase">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#8fa0c8" opacity="0.3"/><path id="phaselit" fill="#f4f1e6" d=""/></svg>
+        <span id="phasetext" aria-hidden="true"></span>
+      </div>
+    </div>
   </div>
 
   <div class="stage">
@@ -393,6 +402,7 @@ input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; po
     var g = h < 5 ? "Burning the midnight oil" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 21 ? "Good evening" : "Time to wind down";
     if (state.zen) { g = (Date.now() % 8000) < 4000 ? "Breathe in" : "Breathe out"; }
     $("hello").textContent = g;
+    showPhase(d);
     var sk = sky(d), sunUp = sk.day, sun = $("sun");
     sun.classList.toggle("on", sunUp);
     if (sunUp !== lastDay) {
@@ -441,12 +451,29 @@ input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; po
     if (p < 0.78) return "Last Quarter";
     return "Waning Crescent";
   }
-  function drawMoon(date) {
-    var p = moonPhase(date), k = Math.cos(2 * Math.PI * p), waxing = p < 0.5, r = 39, c = 39;
+  // SVG path of the lit part of a moon of radius r centred at (c, c).
+  function moonPath(p, r, c) {
+    var k = Math.cos(2 * Math.PI * p), waxing = p < 0.5;
     var rx = (Math.abs(k) * r).toFixed(2);
     var limb = waxing ? 1 : 0, term = (waxing === (k < 0)) ? 1 : 0;
-    var d = "M" + c + " " + (c - r) + " A" + r + " " + r + " 0 0 " + limb + " " + c + " " + (c + r) +
-            " A" + rx + " " + r + " 0 0 " + term + " " + c + " " + (c - r) + " Z";
+    return "M" + c + " " + (c - r) + " A" + r + " " + r + " 0 0 " + limb + " " + c + " " + (c + r) +
+           " A" + rx + " " + r + " 0 0 " + term + " " + c + " " + (c - r) + " Z";
+  }
+  // The moon phase pill under the date: tiny moon, phase name, and how much of it is lit.
+  var lastPhaseKey = "";
+  function showPhase(date) {
+    var p = moonPhase(date), name = moonName(p);
+    var lit = Math.round((1 - Math.cos(2 * Math.PI * p)) / 2 * 100);
+    var key = name + lit;
+    if (key === lastPhaseKey) return;
+    lastPhaseKey = key;
+    $("phaselit").setAttribute("d", moonPath(p, 7, 8));
+    $("phasetext").textContent = name + " \u00b7 " + lit + "%";
+    $("phase").setAttribute("aria-label", "Moon phase: " + name + ", " + lit + "% lit");
+  }
+  function drawMoon(date) {
+    var p = moonPhase(date), k = Math.cos(2 * Math.PI * p);
+    var d = moonPath(p, 39, 39);
     $("moonlit").setAttribute("d", d);
     $("moonclip").setAttribute("d", d);
     var el = $("moon");
